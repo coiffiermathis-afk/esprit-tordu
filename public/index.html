@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Esprit Tordu</title>
+<meta name="description" content="Jeu de soirée multijoueur : interprète une phrase ambiguë, vote pour la réponse la plus drôle. 3 à 12 joueurs, sans inscription.">
+<meta name="theme-color" content="#E3F1EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12142B" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="Esprit Tordu">
+<meta property="og:description" content="Ton cerveau voit-il toujours le mauvais côté des choses ? Rejoins la partie avec le code.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23F2482C'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' font-family='Georgia' font-weight='900' fill='white' transform='rotate(-8 32 32)'%3EE%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Lexend:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="offline" id="offline" hidden>Connexion perdue… reconnexion en cours</div>
+<div id="app"></div>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
