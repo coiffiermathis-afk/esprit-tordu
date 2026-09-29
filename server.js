@@ -28,6 +28,11 @@ function clean(s, n) {
     .replace(/[\u0000-\u001f\u007f-\u009f­​-‏‪-‮⁠-⁤﻿]/g, "")
     .replace(/\s+/g, " ").trim().slice(0, n);
 }
+// photo de profil : image JPEG/PNG/WebP déjà réduite par le navigateur (≈ 192 px)
+const PHOTO_MAX = 60_000;
+function validPhoto(s) {
+  return typeof s === "string" && s.length <= PHOTO_MAX && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(s) ? s : null;
+}
 function genCode() {
   for (let t = 0; t < 50; t++) {
     let c = "";
@@ -42,7 +47,7 @@ function genCode() {
 const rooms = new Map();
 
 function newPlayer({ secret, name, bot = false, spec = false }) {
-  return { pub: id(8), secret, name, color: 0, bot, spec, sockId: null, rdy: false, ans: null, disconnectedAt: 0, botAt: 0, botAns: null, botVote: null };
+  return { pub: id(8), secret, name, photo: null, photoAt: 0, color: 0, bot, spec, sockId: null, rdy: false, ans: null, disconnectedAt: 0, botAt: 0, botAns: null, botVote: null };
 }
 function humans(room) { return room.order.map((p) => room.players.get(p)).filter((p) => p && !p.bot); }
 function active(room) { return room.order.map((p) => room.players.get(p)).filter((p) => p && (p.bot || p.sockId)); }
@@ -226,6 +231,23 @@ function view(room, me, now) {
   };
 }
 
+// Photos envoyées à part (lourdes) : la liste complète au joueur qui arrive,
+// seulement la photo qui change aux autres.
+function photoMap(room) {
+  const m = {};
+  for (const p of room.players.values()) if (p.photo) m[p.pub] = p.photo;
+  return m;
+}
+function pushPhotos(room, pub, joiningSocket) {
+  if (joiningSocket) joiningSocket.emit("avatars", { full: 1, m: photoMap(room) });
+  const p = room.players.get(pub);
+  const delta = { [pub]: (p && p.photo) || null };
+  for (const x of room.players.values()) {
+    if (x.bot || !x.sockId || (joiningSocket && x.sockId === joiningSocket.id)) continue;
+    io.to(x.sockId).emit("avatars", { m: delta });
+  }
+}
+
 function broadcast(room) {
   const now = Date.now();
   for (const p of room.players.values()) {
@@ -246,7 +268,7 @@ app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h", index: "i
 app.get("/health", (_req, res) => res.type("text").send("ok"));
 
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 8 * 1024, pingInterval: 20_000, pingTimeout: 25_000 });
+const io = new Server(server, { maxHttpBufferSize: 96 * 1024, pingInterval: 20_000, pingTimeout: 25_000 });
 
 // limitation du spam : seau de jetons par connexion + créations par adresse IP
 const createLog = new Map(); // ip -> [timestamps]
@@ -316,11 +338,13 @@ io.on("connection", (socket) => {
     if (!code) return reply({ ok: false, err: "Impossible de créer un code, réessaie." });
     detach();
     const host = newPlayer({ secret, name });
+    host.photo = validPhoto(d.photo);
     const room = { code, cfg, hostId: host.pub, ph: "lobby", r: 0, prompt: "", endsAt: 0, total: 0, players: new Map([[host.pub, host]]), order: [host.pub], kicked: new Set(), used: [], an: [], votes: new Map(), rr: [], note: "", sc: { [host.pub]: 0 }, st: {}, best: null, ti: null, emptySince: 0 };
     rooms.set(code, room);
     attach(room, host);
     reply({ ok: true, code });
     broadcast(room);
+    pushPhotos(room, host.pub, socket);
   });
 
   on("join", (d, reply) => {
@@ -334,20 +358,34 @@ io.on("connection", (socket) => {
     if (room.kicked.has(secret)) return reply({ ok: false, err: "Le créateur t'a retiré de cette partie." });
     detach();
     let p = [...room.players.values()].find((x) => !x.bot && x.secret === secret);
-    if (p) { p.name = name; }
+    if (p) { p.name = name; if (d.photo !== undefined) p.photo = validPhoto(d.photo); }
     else if (room.ph === "lobby") {
       if (room.order.length >= room.cfg.max) return reply({ ok: false, err: "Le salon est complet (" + room.cfg.max + " joueurs)." });
       p = newPlayer({ secret, name });
+      p.photo = validPhoto(d.photo);
       p.color = freeColor(room);
       room.players.set(p.pub, p); room.order.push(p.pub); room.sc[p.pub] = 0;
     } else {
       if ([...room.players.values()].filter((x) => x.spec).length >= 20) return reply({ ok: false, err: "Trop de spectateurs dans cette partie." });
       p = newPlayer({ secret, name, spec: true });
+      p.photo = validPhoto(d.photo);
       room.players.set(p.pub, p);
     }
     attach(room, p);
     reply({ ok: true, code });
     broadcast(room);
+    pushPhotos(room, p.pub, socket);
+  });
+
+  on("photo", (d, reply) => {
+    const { room, me } = ctx(); if (!room) return reply({ ok: false });
+    const now = Date.now();
+    if (now - me.photoAt < 2000) return reply({ ok: false, err: "Attends deux secondes avant de changer encore." });
+    const photo = d.photo == null ? null : validPhoto(d.photo);
+    if (d.photo != null && !photo) return reply({ ok: false, err: "Cette photo n'est pas valide." });
+    me.photo = photo; me.photoAt = now;
+    pushPhotos(room, me.pub, null);
+    reply({ ok: true });
   });
 
   on("ready", (_d, reply) => {
