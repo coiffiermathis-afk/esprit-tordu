@@ -46,6 +46,7 @@
     name: clean(sget("et_name") || "", 16),
     photo: savedPhoto && PHOTO_RE.test(savedPhoto) ? savedPhoto : null,
     charIdx: +(sget("et_char") ?? -1),
+    sound: sget("et_sound") !== "0",
     code: null,
     prefill: urlCode,
     G: null,
@@ -228,14 +229,14 @@
   });
 
   // ---------- confettis ----------
-  function confetti() {
+  function confetti(n) {
     if (reduced()) return;
     const cv = document.createElement("canvas");
     cv.className = "confetti"; document.body.appendChild(cv);
     const ctx = cv.getContext("2d"), dpr = Math.min(2, window.devicePixelRatio || 1);
     const W = (cv.width = innerWidth * dpr), H = (cv.height = innerHeight * dpr);
     const cols = ["#F2482C", "#3558F0", "#138F78", "#FFC23D", "#FF6FB5", "#8A5CFF"];
-    const parts = Array.from({ length: 140 }, () => ({ x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.35, vx: (Math.random() - 0.5) * 16 * dpr, vy: (-Math.random() * 18 - 6) * dpr, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.4, w: (6 + Math.random() * 6) * dpr, h: (8 + Math.random() * 10) * dpr, c: cols[(Math.random() * cols.length) | 0] }));
+    const parts = Array.from({ length: n || 140 }, () => ({ x: W / 2 + (Math.random() - 0.5) * W * 0.3, y: H * 0.35, vx: (Math.random() - 0.5) * 16 * dpr, vy: (-Math.random() * 18 - 6) * dpr, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.4, w: (6 + Math.random() * 6) * dpr, h: (8 + Math.random() * 10) * dpr, c: cols[(Math.random() * cols.length) | 0] }));
     const t0 = performance.now();
     (function frame(t) {
       const el = t - t0;
@@ -246,6 +247,111 @@
       }
       if (el < 3600) requestAnimationFrame(frame); else cv.remove();
     })(t0);
+  }
+
+  // ---------- effets gagnant / perdant ----------
+  let AC = null;
+  function audio() {
+    if (!S.sound) return null;
+    try {
+      AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state === "suspended") AC.resume();
+      return AC;
+    } catch (e) { return null; }
+  }
+  // le son n'est autorisé qu'après un geste : on prépare l'audio au premier toucher
+  document.addEventListener("pointerdown", () => { if (!AC) audio(); }, { once: true });
+  function tone(f, t0, d, type, vol, slide) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+    o.type = type || "triangle";
+    o.frequency.setValueAtTime(f, t);
+    if (slide) o.frequency.linearRampToValueAtTime(slide, t + d);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t + d + 0.05);
+  }
+  const SFX = {
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.22, "square", 0.07)); tone(1047, 0.5, 0.7, "triangle", 0.12); tone(1319, 0.5, 0.7, "triangle", 0.08); },
+    podium() { [659, 784, 988].forEach((f, i) => tone(f, i * 0.12, 0.3, "triangle", 0.1)); },
+    lose() { [392, 370, 349].forEach((f, i) => tone(f, i * 0.45, 0.42, "sawtooth", 0.06)); tone(330, 1.35, 1.1, "sawtooth", 0.06, 290); },
+    ding() { tone(880, 0, 0.15, "sine", 0.12); tone(1320, 0.1, 0.3, "sine", 0.1); },
+    flop() { tone(196, 0, 0.45, "sawtooth", 0.05, 140); },
+  };
+  // pluie d'emojis qui tombent sur tout l'écran
+  function rain(emojis, n) {
+    if (reduced()) return;
+    const box = document.createElement("div");
+    box.className = "rain"; box.setAttribute("aria-hidden", "true");
+    for (let i = 0; i < (n || 28); i++) {
+      const sp = document.createElement("span");
+      sp.textContent = emojis[i % emojis.length];
+      sp.style.left = Math.random() * 100 + "%";
+      sp.style.fontSize = 1.4 + Math.random() * 1.8 + "rem";
+      sp.style.animationDuration = 2.2 + Math.random() * 1.8 + "s";
+      sp.style.animationDelay = Math.random() * 1.2 + "s";
+      sp.style.setProperty("--r", (Math.random() * 720 - 360).toFixed(0) + "deg");
+      box.appendChild(sp);
+    }
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 5200);
+  }
+  function shake() {
+    if (reduced()) return;
+    const a = $("#app"); a.classList.remove("shake"); void a.offsetWidth; a.classList.add("shake");
+    setTimeout(() => a.classList.remove("shake"), 900);
+  }
+  // grande annonce plein écran (se ferme toute seule ou au toucher)
+  function banner(kind, big, small, photoOf) {
+    const old = $("#fx"); if (old) old.remove();
+    const el = document.createElement("div");
+    el.id = "fx"; el.className = "fx " + kind; el.setAttribute("role", "status");
+    el.innerHTML = '<div class="fx-card">' + (photoOf ? av(photoOf, "xl") : "") + '<span class="fx-big">' + big + '</span><span class="fx-small">' + small + "</span></div>";
+    el.addEventListener("click", () => el.remove());
+    document.body.appendChild(el);
+    paintAvatars();
+    setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 400); }, 3600);
+  }
+  function standings(G) {
+    const rows = G.pl.slice().sort((a, b) => (G.sc[b.i] || 0) - (G.sc[a.i] || 0));
+    const top = rows.length ? G.sc[rows[0].i] || 0 : 0;
+    const bottom = rows.length ? G.sc[rows[rows.length - 1].i] || 0 : 0;
+    return { rows, top, bottom };
+  }
+  function endFx(G) {
+    $("#toast").hidden = true;
+    const { rows, top, bottom } = standings(G);
+    const me = playerOf(G, G.me);
+    if (!me || rows.length < 2) return confetti();
+    const mine = G.sc[me.i] || 0, rank = rows.filter((x) => (G.sc[x.i] || 0) > mine).length + 1;
+    if (mine === top) {
+      banner("win", "🏆 TU AS GAGNÉ !", "L'esprit le plus tordu de la soirée, c'est toi.", me);
+      confetti(220); rain(["🏆", "🎉", "👑", "⭐", "🍾"], 30); SFX.win();
+    } else if (mine === bottom && top > bottom) {
+      banner("lose", "🍅 LANTERNE ROUGE", "Dernier… Tes blagues ont besoin de vacances.", me);
+      rain(["🍅", "💩", "🥀", "🤡", "🐌"], 34); shake(); SFX.lose();
+    } else if (rank <= 3) {
+      banner("podium", rank === 2 ? "🥈 SUR LE PODIUM" : "🥉 SUR LE PODIUM", "Presque… Le trône t'a échappé de peu.", me);
+      confetti(120); SFX.podium();
+    } else {
+      confetti(80);
+    }
+  }
+  let lastRoundFx = "";
+  function roundFx(G) {
+    const k = G.code + "|" + G.r + "|" + G.prompt;
+    if (k === lastRoundFx) return;
+    lastRoundFx = k;
+    const rr = G.rr || [];
+    const mine = rr.find((r) => r.i === G.me);
+    if (!mine) return;
+    if (mine.p > 0 && mine.p === Math.max(...rr.map((r) => r.p))) {
+      confetti(60); SFX.ding(); toast("🥇 Ta réponse gagne la manche !");
+    } else if (mine.p === 0 && rr.length > 1) {
+      rain(["💩", "🍅"], 10); SFX.flop(); toast("Zéro vote… 💩 La prochaine sera la bonne.");
+    }
   }
 
   // ---------- actions ----------
@@ -284,6 +390,7 @@
     pickPhoto() { $("#photoIn").click(); },
     selfie() { $("#selfieIn").click(); },
     randomAv() { randomChar(); },
+    toggleSound(b) { S.sound = !S.sound; sset("et_sound", S.sound ? "1" : "0"); b.textContent = S.sound ? "🔊" : "🔇"; b.setAttribute("aria-label", S.sound ? "Couper le son" : "Activer le son"); if (S.sound) SFX.ding(); },
     randomName() {
       const el = $("#nm"); if (!el) return;
       let n; do { n = NICKS[Math.floor(Math.random() * NICKS.length)]; } while (NICKS.length > 1 && n === el.value);
@@ -402,7 +509,7 @@
   function topBar(G) {
     const me = playerOf(G, G.me);
     const round = G.ph !== "lobby" && G.ph !== "end" ? '<span class="pill">Manche ' + G.r + "/" + G.cfg.rounds + "</span>" : "";
-    return '<div class="bar">' + logo(true) + '<div class="row">' + (me ? av(me, "s") : "") + '<span class="pill">' + esc(G.code) + "</span>" + round + '<button class="link" data-act="home">Quitter</button></div></div>';
+    return '<div class="bar">' + logo(true) + '<div class="row">' + (me ? av(me, "s") : "") + '<span class="pill">' + esc(G.code) + "</span>" + round + '<button class="link snd" data-act="toggleSound" aria-label="' + (S.sound ? "Couper le son" : "Activer le son") + '">' + (S.sound ? "🔊" : "🔇") + '</button><button class="link" data-act="home">Quitter</button></div></div>';
   }
   // Photo de la manche (manches image) avec son crédit.
   function photoRound(G, small) {
@@ -474,10 +581,11 @@
       (G.note ? '<p class="note">' + esc(G.note) + "</p>" : "") +
       '<ul class="rlist">' + (G.rr || []).map((r, k) => {
         const p = playerOf(G, r.i) || { i: r.i, n: "?", c: 10 };
-        return '<li class="' + (k === 0 && r.p > 0 ? "top" : "") + '" style="--k:' + k + '">' + av(p, "l") +
+        const cls = k === 0 && r.p > 0 ? "top" : r.p === 0 && (G.rr || []).length > 1 ? "flop" : "";
+        return '<li class="' + cls + '" style="--k:' + k + '">' + av(p, "l") +
           '<span class="rtxt"><span class="ans">' + (r.p > 0 && k < 3 ? medals[k] + " " : "") + esc(r.t) + '</span><span class="who">' + esc(p.n) +
           '<span class="v">· ' + (G.cfg.mode === "absurde" ? "🌀" : "😂") + " " + r.v + (r.s ? " · ⭐ " + r.s : "") + (r.g ? " · coup de génie" : "") + "</span></span></span>" +
-          '<span class="pts">+' + r.p + "</span></li>";
+          '<span class="pts">' + (cls === "flop" ? '<span class="poo" aria-hidden="true">💩</span>' : "") + "+" + r.p + "</span></li>";
       }).join("") + "</ul>" +
       rankHTML(G, gains) + '<div class="row between"><span class="summary" id="nextin"></span>' + (isHost(G) ? '<button class="btn sm" data-act="skip">' + (G.r >= G.cfg.rounds ? "Voir le podium →" : "Manche suivante →") + "</button>" : "") + "</div></section>";
   }
@@ -486,6 +594,7 @@
     const p = [rows[1], rows[0], rows[2]], cls = ["p2", "p1", "p3"], nums = ["2", "1", "3"], sizes = ["l", "xl", "l"];
     return '<section class="card"><h2 class="h2 center">PARTIE TERMINÉE !</h2><div class="podium">' +
       p.map((x, k) => (x ? '<div class="' + cls[k] + '">' + (k === 1 ? '<span class="crown" aria-hidden="true">👑</span>' : "") + av(x, sizes[k]) + '<span class="pn">' + esc(x.n) + '</span><span class="ps">' + (G.sc[x.i] || 0) + ' pts</span><span class="blk">' + nums[k] + "</span></div>" : "<div></div>")).join("") + "</div>" +
+      (() => { const st = standings(G); if (rows.length < 2 || st.top === st.bottom) return ""; const last = rows.filter((x) => (G.sc[x.i] || 0) === st.bottom); return '<div class="lanterne">' + last.map((x) => av(x, "m")).join("") + '<span>🍅 Lanterne rouge : <b>' + last.map((x) => esc(x.n)).join(", ") + "</b></span></div>"; })() +
       (rows.length > 3 ? rankHTML(G) : "") +
       ((G.ti || []).length ? '<span class="eyebrow">Titres de la soirée</span><div class="titles">' + G.ti.map((t) => { const x = playerOf(G, t.i) || { i: t.i, n: "?", c: 10 }; return '<div><span class="thead">' + av(x, "m") + '<span class="e">' + t.e + '</span></span><span class="t">' + esc(t.t) + '</span><span class="n">' + esc(x.n) + '</span><span class="d">' + esc(t.d) + "</span></div>"; }).join("") + "</div>" : "") +
       (isHost(G) ? '<button class="btn big tomato" data-act="replay">REJOUER</button>' : '<p class="center summary">Le créateur peut relancer une partie avec le même salon.</p>') +
@@ -511,7 +620,8 @@
     const ans = $("#ans");
     if (ans) { ans.value = draft; $("#chars").textContent = draft.length + "/60"; }
     drawCards(); updateDyn(); paintAvatars();
-    if (G && G.ph === "end" && !G.spec && !wasEnd) confetti();
+    if (G && G.ph === "end" && !G.spec && !wasEnd) endFx(G);
+    if (G && G.ph === "res" && !G.spec) roundFx(G);
   }
   function setHTML(el, h) { if (el && el._h !== h) { el._h = h; el.innerHTML = h; return true; } return false; }
   function updateDyn() {
