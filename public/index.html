@@ -19,8 +19,8 @@
 <div class="offline" id="offline" hidden>Connexion perdue… reconnexion en cours</div>
 <div id="app"></div>
 <div class="toast" id="toast" role="status" hidden></div>
-<input type="file" id="photoIn" accept="image/*" hidden>
-<input type="file" id="selfieIn" accept="image/*" capture="user" hidden>
+<input type="file" id="photoIn" class="vh" accept="image/*" tabindex="-1" aria-hidden="true">
+<input type="file" id="selfieIn" class="vh" accept="image/*" capture="user" tabindex="-1" aria-hidden="true">
 <script src="/socket.io/socket.io.js"></script>
 <script src="app.js"></script>
 </body>
