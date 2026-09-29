@@ -192,8 +192,12 @@
       else { el.textContent = el.dataset.init; el.classList.remove("ph"); }
     });
   }
+  // Selfie et Galerie sont des <label> reliés aux champs fichier : c'est la façon la plus fiable
+  // d'ouvrir l'appareil photo ou la galerie sur tous les téléphones (Safari, Chrome, navigateurs intégrés).
+  const IN_APP = /Instagram|FBAN|FBAV|FB_IAB|Snapchat|TikTok|musical_ly|Line\/|LinkedInApp|Twitter/i.test(navigator.userAgent || "");
   function avOptions() {
-    return '<div class="avopts"><button type="button" class="btn sm" data-act="selfie">📸 Selfie</button><button type="button" class="btn sm" data-act="pickPhoto">🖼️ Galerie</button><button type="button" class="btn sm mustard" data-act="randomAv">🎲 Au hasard</button></div>';
+    return '<div class="avopts"><label for="selfieIn" class="btn sm" role="button" tabindex="0">📸 Selfie</label><label for="photoIn" class="btn sm" role="button" tabindex="0">🖼️ Galerie</label><button type="button" class="btn sm mustard" data-act="randomAv">🎲 Au hasard</button></div>' +
+      (IN_APP ? '<p class="inapp">Tu es dans le navigateur d\'une appli (Instagram, Snapchat…). Si la galerie ne s\'ouvre pas, touche <b>⋯</b> puis <b>Ouvrir dans le navigateur</b>, ou prends un personnage 🎲.</p>' : "");
   }
   function photoPicker() {
     return '<div class="avpick"><button type="button" class="avbtn" data-act="openSheet" aria-label="Choisir ma photo">' + meAv("xl") + '<span class="cam" aria-hidden="true">📷</span></button>' +
@@ -216,7 +220,10 @@
     paintAvatars();
   }
   function closeSheet() { const el = $("#sheet"); if (el) el.remove(); }
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeSheet();
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("label[for][role=button]")) { e.preventDefault(); e.target.click(); }
+  });
 
   // ---------- confettis ----------
   function confetti() {
