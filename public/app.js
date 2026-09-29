@@ -389,13 +389,21 @@
     const round = G.ph !== "lobby" && G.ph !== "end" ? '<span class="pill">Manche ' + G.r + "/" + G.cfg.rounds + "</span>" : "";
     return '<div class="bar">' + logo(true) + '<div class="row">' + (me ? av(me, "s") : "") + '<span class="pill">' + esc(G.code) + "</span>" + round + '<button class="link" data-act="home">Quitter</button></div></div>';
   }
+  // Photo de la manche (manches image) avec son crédit.
+  function photoRound(G, small) {
+    if (!G.img || !/^[a-z0-9-]+$/.test(G.img.id)) return "";
+    const credit = esc(G.img.by) + " · " + esc(G.img.lic);
+    const link = /^https:\/\/commons\.wikimedia\.org\//.test(G.img.page || "") ? '<a href="' + esc(G.img.page) + '" target="_blank" rel="noopener">Wikimedia Commons</a>' : "Wikimedia Commons";
+    return '<figure class="pimg' + (small ? " small" : "") + '"><img src="/img/' + G.img.id + '" alt="Photo mystère de la manche"><figcaption>Photo : ' + credit + " · " + link + "</figcaption></figure>";
+  }
+  const promptCls = (G) => "prompt" + (G.img ? " withimg" : "");
   const timerHTML = () => '<div class="timer" id="timer"><div class="track"><div class="fill"></div></div><span class="sec">–</span></div>';
 
   function vGame() {
     const G = S.G;
     if (!G) return vConnecting();
     let body;
-    if (G.spec) body = '<div class="card"><span class="eyebrow">Spectateur</span><h2 class="h2">Partie en cours</h2><p>Tu rejoindras la prochaine partie de ce salon quand le créateur relancera.</p>' + (G.ph === "write" || G.ph === "vote" ? '<p class="prompt">« ' + esc(G.prompt) + " »</p>" : "") + rankHTML(G) + "</div>";
+    if (G.spec) body = '<div class="card"><span class="eyebrow">Spectateur</span><h2 class="h2">Partie en cours</h2><p>Tu rejoindras la prochaine partie de ce salon quand le créateur relancera.</p>' + (G.ph === "write" || G.ph === "vote" ? photoRound(G, true) + '<p class="prompt">« ' + esc(G.prompt) + " »</p>" : "") + rankHTML(G) + "</div>";
     else if (G.ph === "lobby") body = vLobby(G);
     else if (G.ph === "write") body = vWrite(G);
     else if (G.ph === "vote") body = vVote(G);
@@ -414,7 +422,7 @@
   function progressRow() { return '<div class="prog" id="prog" aria-label="Avancement des joueurs"></div>'; }
   function vWrite(G) {
     const a = G.myAns;
-    return '<section class="card">' + timerHTML() + '<span class="eyebrow center">Tour ' + G.r + '</span><p class="prompt">« ' + esc(G.prompt) + " »</p>" +
+    return '<section class="card">' + timerHTML() + '<span class="eyebrow center">Tour ' + G.r + (G.img ? " · 📸 photo" : "") + "</span>" + photoRound(G) + '<p class="' + promptCls(G) + '">« ' + esc(G.prompt) + " »</p>" +
       (a ? '<div class="locked">Réponse envoyée<b>« ' + esc(a) + ' »</b><span class="summary">On attend les autres…</span></div>'
          : '<form class="stack" data-submit="submitAns"><label class="f" for="ans">Ton interprétation</label><textarea class="inp" id="ans" maxlength="60" placeholder="Écris ton interprétation..."></textarea><div class="row between"><span class="chars" id="chars">0/60</span><button class="btn tomato" type="submit">VALIDER</button></div></form>') +
       progressRow() + '<p class="count" id="count"></p>' + (isHost(G) ? '<button class="link" data-act="skip">Terminer la phase maintenant ⏭</button>' : "") + "</section>";
@@ -423,7 +431,7 @@
   function vVote(G) {
     const v = G.myVote;
     const nothing = G.an.every((a) => a.mine);
-    return '<section class="card">' + timerHTML() + '<span class="eyebrow center">Tour ' + G.r + ' · vote</span><p class="prompt">« ' + esc(G.prompt) + " »</p>" +
+    return '<section class="card">' + timerHTML() + '<span class="eyebrow center">Tour ' + G.r + ' · vote</span>' + photoRound(G, true) + '<p class="' + promptCls(G) + '">« ' + esc(G.prompt) + " »</p>" +
       (v ? "<div class=\"locked\">Vote enregistré ✓<span class=\"summary\" style=\"display:block\">Les auteurs seront dévoilés aux résultats.</span></div><div class=\"acards\">" + G.an.map((a, k) => '<div class="acard"><button class="apick" disabled aria-pressed="' + (a.k === v.j) + '"><span class="dot" style="--c:' + COLORS[k % 12] + '"></span>' + esc(a.t) + (a.k === v.j ? '<span class="mine">ton vote</span>' : a.mine ? '<span class="mine">ta réponse</span>' : "") + "</button></div>").join("") + "</div>"
         : nothing ? '<p class="locked">Rien à voter pour toi cette manche.</p>'
         : '<p class="legend"><b>' + voteWord(G) + "</b> : touche une réponse. ⭐ Coup de génie (facultatif) : +1 pour la réponse la plus étoilée. Tu ne peux pas voter pour ta propre réponse.</p><div class=\"acards\" id=\"cards\"></div><button class=\"btn big tomato\" data-act=\"vote\" id=\"votebtn\" disabled>VOTER</button>") +
@@ -447,7 +455,7 @@
   function vRes(G) {
     const medals = ["🥇", "🥈", "🥉"];
     const gains = {}; (G.rr || []).forEach((r) => (gains[r.i] = r.p));
-    return '<section class="card"><span class="eyebrow center">Tour ' + G.r + ' · résultats</span><p class="prompt" style="font-size:1.4rem">« ' + esc(G.prompt) + " »</p>" +
+    return '<section class="card"><span class="eyebrow center">Tour ' + G.r + ' · résultats</span>' + photoRound(G, true) + '<p class="prompt" style="font-size:1.4rem">« ' + esc(G.prompt) + " »</p>" +
       (G.note ? '<p class="note">' + esc(G.note) + "</p>" : "") +
       '<ul class="rlist">' + (G.rr || []).map((r, k) => {
         const p = playerOf(G, r.i) || { i: r.i, n: "?", c: 10 };
