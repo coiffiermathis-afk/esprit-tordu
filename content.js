@@ -190,4 +190,29 @@ const BOT_ANSWERS = ["Une enceinte", "Un hamster", "Mon oncle", "Une pile", "Le 
 const BOT_ABSURD = ["Une licorne en redressement fiscal", "Trois pigeons dans un imper", "Du Wi-Fi en poudre", "Un raton laveur ministre", "La moustache de Mamie", "Un yaourt qui a vu des choses", "Des chaussettes en grève", "Un canapé qui juge", "Le fantôme d'un croissant", "Une baguette ceinture noire"];
 const BOT_NAMES = ["Robot Gérard", "Bip-Bop", "Tata Algo", "Monsieur Pixel", "Zinzin 3000", "Carla Bug", "Octet", "Gaston.exe"];
 
-module.exports = { PROMPTS_CLASSIQUE, PROMPTS_ABSURDE, BOT_ANSWERS, BOT_ABSURD, BOT_NAMES };
+// Photos à double sens pour les manches image (libres de droits, Wikimedia Commons).
+// Le serveur les télécharge une fois puis les sert lui-même sur /img/<id>.
+const IMAGES = [
+  { id: "coco", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Lodoicea_maldivica_seed.jpg/960px-Lodoicea_maldivica_seed.jpg", by: "Karelj", lic: "domaine public", page: "https://commons.wikimedia.org/wiki/File:Lodoicea_maldivica_seed.jpg" },
+  { id: "mutinus", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Mutinus_caninus%2C_Dog_Stinkhorn%2C_UK.jpg/960px-Mutinus_caninus%2C_Dog_Stinkhorn%2C_UK.jpg", by: "Stu's Images", lic: "CC BY-SA 3.0", page: "https://commons.wikimedia.org/wiki/File:Mutinus_caninus,_Dog_Stinkhorn,_UK.jpg" },
+  { id: "cactus", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Echinopsis_lageniformis_5.jpg/960px-Echinopsis_lageniformis_5.jpg", by: "Alfredo F. Fuentes Claros", lic: "CC0", page: "https://commons.wikimedia.org/wiki/File:Echinopsis_lageniformis_5.jpg" },
+  { id: "kigelia", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/Kigelia_africana_fruit_in_Hyderabad%2C_India_02.jpg/960px-Kigelia_africana_fruit_in_Hyderabad%2C_India_02.jpg", by: "Pinakpani", lic: "CC BY-SA 4.0", page: "https://commons.wikimedia.org/wiki/File:Kigelia_africana_fruit_in_Hyderabad,_India_02.jpg" },
+  { id: "paps", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/The_Paps_of_Dana-01.jpg/960px-The_Paps_of_Dana-01.jpg", by: "Gerard Lovett", lic: "CC BY 2.0", page: "https://commons.wikimedia.org/wiki/File:The_Paps_of_Dana-01.jpg" },
+  { id: "cappadoce", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Fairy_chimneys_in_Cappadocia.JPG/960px-Fairy_chimneys_in_Cappadocia.JPG", by: "Wolfgang Moroder", lic: "CC BY-SA 3.0", page: "https://commons.wikimedia.org/wiki/File:Fairy_chimneys_in_Cappadocia.JPG" },
+  { id: "gherkin", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/30_St_Mary_Axe%2C_%27Gherkin%27.JPG/960px-30_St_Mary_Axe%2C_%27Gherkin%27.JPG", by: "Paste (Wikipédia anglophone)", lic: "domaine public", page: "https://commons.wikimedia.org/wiki/File:30_St_Mary_Axe,_%27Gherkin%27.JPG" },
+  { id: "agbar", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Torre_Agbar_-_Barcelona%2C_Spain_-_Jan_2007.jpg/960px-Torre_Agbar_-_Barcelona%2C_Spain_-_Jan_2007.jpg", by: "Diliff", lic: "CC BY 2.5", page: "https://commons.wikimedia.org/wiki/File:Torre_Agbar_-_Barcelona,_Spain_-_Jan_2007.jpg" },
+  { id: "ypsilanti", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a2/Ypsilanti_Water_Tower_2011.JPG/960px-Ypsilanti_Water_Tower_2011.JPG", by: "Dwight Burdette", lic: "CC BY 3.0", page: "https://commons.wikimedia.org/wiki/File:Ypsilanti_Water_Tower_2011.JPG" },
+  { id: "aubergines", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/89/Egg_plant.JPG/960px-Egg_plant.JPG", by: "Miansari66", lic: "CC0", page: "https://commons.wikimedia.org/wiki/File:Egg_plant.JPG" },
+  { id: "peches", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Autumn_Red_peaches.jpg/960px-Autumn_Red_peaches.jpg", by: "Jack Dykinga, USDA", lic: "domaine public", page: "https://commons.wikimedia.org/wiki/File:Autumn_Red_peaches.jpg" },
+  { id: "phallus", src: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Phallus_impudicus_by_Danny_S._-_001.jpg/960px-Phallus_impudicus_by_Danny_S._-_001.jpg", by: "Danny Steven S.", lic: "CC BY-SA 3.0", page: "https://commons.wikimedia.org/wiki/File:Phallus_impudicus_by_Danny_S._-_001.jpg" },
+];
+const IMAGE_CAPTIONS = [
+  "Qu'est-ce que tu vois vraiment sur cette photo ?",
+  "Donne un titre à cette photo.",
+  "Décris cette photo à ta grand-mère.",
+  "Cette photo, c'est quoi selon toi ?",
+  "Qu'est-ce que ça t'évoque ?",
+  "Imagine la légende de cette photo sur Instagram.",
+];
+
+module.exports = { PROMPTS_CLASSIQUE, PROMPTS_ABSURDE, BOT_ANSWERS, BOT_ABSURD, BOT_NAMES, IMAGES, IMAGE_CAPTIONS };
