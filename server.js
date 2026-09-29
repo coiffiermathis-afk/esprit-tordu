@@ -17,6 +17,7 @@ const MODES = ["classique", "absurde", "rapide"];
 const LOBBY_DROP_MS = 30_000; // joueur déconnecté retiré du salon après 30 s
 const HOST_HANDOFF_MS = 8_000; // créateur déconnecté remplacé après 8 s
 const ROOM_IDLE_MS = 10 * 60_000; // salon vide supprimé après 10 min
+const IMAGE_RATE = process.env.IMAGE_RATE != null ? +process.env.IMAGE_RATE : 0.2; // ≈ 1 manche sur 5 en photo
 
 // ---------- utilitaires ----------
 const rand = (a, b) => Math.floor(a + Math.random() * Math.max(1, b - a));
@@ -71,6 +72,16 @@ function startRound(room, now) {
   room.used.push(pre + k);
   if (room.used.length > 40) room.used.shift();
   room.prompt = bank[k];
+  room.img = null;
+  // de temps en temps, une photo à double sens à la place de la phrase (pas en mode absurde)
+  if (!abs && C.IMAGES.length && Math.random() < IMAGE_RATE) {
+    let ids = C.IMAGES.map((_, i) => i).filter((i) => !room.used.includes("i" + i));
+    if (!ids.length) { room.used = room.used.filter((u) => u[0] !== "i"); ids = C.IMAGES.map((_, i) => i); }
+    const n = pick(ids), im = C.IMAGES[n];
+    room.used.push("i" + n);
+    room.img = { id: im.id, by: im.by, lic: im.lic, page: im.page };
+    room.prompt = pick(C.IMAGE_CAPTIONS);
+  }
   room.ph = "write";
   room.endsAt = now + room.cfg.time * 1000;
   room.total = room.cfg.time * 1000;
@@ -212,6 +223,7 @@ function view(room, me, now) {
     ph: room.ph,
     r: room.r,
     prompt: room.prompt,
+    img: room.ph === "write" || room.ph === "vote" || room.ph === "res" ? room.img || null : null,
     left: room.endsAt ? Math.max(0, room.endsAt - now) : 0,
     total: room.total || 0,
     note: room.note,
@@ -267,6 +279,34 @@ app.use((req, res, next) => {
 // maxAge 0 : le navigateur revérifie à chaque visite (réponse 304 légère), donc les mises à jour arrivent tout de suite.
 app.use(express.static(path.join(__dirname, "public"), { maxAge: 0, index: "index.html" }));
 app.get("/health", (_req, res) => res.type("text").send("ok"));
+
+// Photos des manches image : téléchargées une fois depuis Wikimedia Commons, gardées en mémoire.
+const imgCache = new Map(); // id -> { type, buf } ou une promesse en cours
+const IMG_UA = "EspritTordu/1.0 (jeu de soiree; https://github.com/coiffiermathis-afk/esprit-tordu)";
+function loadImage(im) {
+  const c = imgCache.get(im.id);
+  if (c) return c instanceof Promise ? c : Promise.resolve(c);
+  const p = fetch(im.src, { headers: { "User-Agent": IMG_UA } })
+    .then(async (r) => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const v = { type: r.headers.get("content-type") || "image/jpeg", buf: Buffer.from(await r.arrayBuffer()) };
+      imgCache.set(im.id, v);
+      return v;
+    })
+    .catch((e) => { imgCache.delete(im.id); throw e; });
+  imgCache.set(im.id, p);
+  return p;
+}
+app.get("/img/:id", async (req, res) => {
+  const im = C.IMAGES.find((x) => x.id === req.params.id);
+  if (!im) return res.status(404).end();
+  try {
+    const v = await loadImage(im);
+    res.set("Content-Type", v.type).set("Cache-Control", "public, max-age=86400").send(v.buf);
+  } catch (e) { console.error("image", im.id, e.message); res.status(502).end(); }
+});
+// préchargement doux au démarrage (une photo toutes les 2 s)
+C.IMAGES.forEach((im, i) => setTimeout(() => loadImage(im).catch(() => {}), 3000 + i * 2000).unref());
 
 const server = http.createServer(app);
 const io = new Server(server, { maxHttpBufferSize: 96 * 1024, pingInterval: 20_000, pingTimeout: 25_000 });
