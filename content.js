@@ -130,7 +130,27 @@ const PROMPTS_CLASSIQUE = [
   "On souffle, on aspire, on recommence.",
   "Il est tout chaud quand il sort du four.",
   "On le fait durer jusqu'au bout de la nuit.",
-  "Il faut le garder au chaud entre les cuisses."
+  "Il faut le garder au chaud entre les cuisses.",
+  "Il faut bien viser le trou du premier coup.",
+  "On le tripote pendant des heures sans s'en lasser.",
+  "Ça fait des bulles quand on souffle dedans.",
+  "On le sort de son étui avec délicatesse.",
+  "Il faut le lustrer régulièrement pour qu'il reste beau.",
+  "On le met en bouche et on laisse fondre.",
+  "Plus on tire dessus, plus il s'allonge.",
+  "C'est encore meilleur avec un peu de chantilly.",
+  "On le fait en silence pour ne pas réveiller les voisins.",
+  "Il faut bien le presser pour en tirer tout le jus.",
+  "On le fourre avant de le passer au four.",
+  "Ça se déroule tout seul sur la longueur.",
+  "On a tous essayé au moins une fois dans la douche.",
+  "Il faut bien le graisser avant de le mettre en marche.",
+  "Ça rentre facilement quand c'est bien préparé.",
+  "On aime quand ça dure longtemps.",
+  "Il suffit de la frotter pour qu'elle s'allume.",
+  "On se le partage à deux, c'est plus romantique.",
+  "Plus c'est ferme, plus c'est agréable.",
+  "On le dévore des yeux avant d'y goûter."
 ];
 
 const PROMPTS_ABSURDE = [
