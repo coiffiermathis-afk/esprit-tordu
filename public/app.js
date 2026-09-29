@@ -617,6 +617,7 @@
     else if (S.view === "kicked") h = vKicked();
     else h = vGame();
     $("#app").innerHTML = h;
+    document.body.dataset.ph = G ? G.ph : S.view; // teinte du décor selon la phase
     const ans = $("#ans");
     if (ans) { ans.value = draft; $("#chars").textContent = draft.length + "/60"; }
     drawCards(); updateDyn(); paintAvatars();
