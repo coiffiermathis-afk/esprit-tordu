@@ -244,3 +244,20 @@ img{max-width:100%}
 @keyframes pop{from{transform:translateY(8px) scale(.97);opacity:0}to{transform:none;opacity:1}}
 .confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
 @media (prefers-reduced-motion:reduce){.card,.seat,.rlist li,.podium .blk,.crown,.pchip .av{animation:none!important}}
+
+/* choix de la photo : selfie, galerie, personnages */
+.avopts{display:flex;flex-wrap:wrap;gap:8px}
+.avopts .btn.sm{padding:7px 10px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:10px}
+.gchar{aspect-ratio:1;max-width:100%;border-radius:50%;border:3px solid var(--edge);background:var(--c) repeating-linear-gradient(-36deg,rgba(255,255,255,.18) 0 8px,transparent 8px 18px);box-shadow:2px 2px 0 var(--drop);display:grid;place-items:center;padding:0;font-size:1.7rem;line-height:1;transition:transform .12s}
+.gchar span{display:block;transform:rotate(var(--t))}
+.gchar:hover{transform:scale(1.08) rotate(-4deg)}
+.gchar[aria-pressed="true"]{outline:4px solid var(--mustard);outline-offset:2px}
+.sheet{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-end;justify-content:center}
+.sheet-bg{position:absolute;inset:0;background:rgba(10,12,30,.55)}
+.sheet-panel{position:relative;width:100%;max-width:560px;max-height:88%;overflow:auto;background:var(--surface);border:3px solid var(--edge);border-bottom:0;border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:sheetUp .28s cubic-bezier(.3,1.2,.5,1) both}
+.sheet-title{font-family:var(--f-display);font-size:1.5rem}
+.sheet-me{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.sheet-me .avopts{flex:1;min-width:180px}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet-panel{animation:none}}
