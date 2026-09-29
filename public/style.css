@@ -315,3 +315,20 @@ label.btn{display:inline-flex;align-items:center;cursor:pointer;user-select:none
 .lanterne span{min-width:0;overflow-wrap:anywhere}
 .snd{text-decoration:none;font-size:1.05rem}
 @media (prefers-reduced-motion:reduce){.fx,.fx-card,.shake,.rlist li.top,.rlist li.flop .poo,.podium .p1 .av{animation:none!important}}
+
+/* ---------- décor de fond ---------- */
+:root{--glow1:rgba(255,194,61,.42);--glow2:rgba(255,111,181,.30);--glow3:rgba(30,200,230,.22);--patop:.15}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glow1:rgba(138,92,255,.38);--glow2:rgba(255,90,61,.26);--glow3:rgba(43,194,162,.22);--patop:.16}}
+:root[data-theme="dark"]{--glow1:rgba(138,92,255,.38);--glow2:rgba(255,90,61,.26);--glow3:rgba(43,194,162,.22);--patop:.16}
+body[data-ph="write"]{--glow1:rgba(19,143,120,.34);--glow2:rgba(53,88,240,.24)}
+body[data-ph="vote"]{--glow1:rgba(138,92,255,.36);--glow2:rgba(255,111,181,.30)}
+body[data-ph="res"]{--glow1:rgba(255,194,61,.55);--glow2:rgba(242,72,44,.26)}
+body[data-ph="end"]{--glow1:rgba(255,194,61,.6);--glow2:rgba(255,111,181,.4);--glow3:rgba(138,92,255,.3)}
+.decor{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;background:radial-gradient(120% 70% at 50% -12%,var(--glow1),transparent 62%),radial-gradient(80% 60% at 108% 104%,var(--glow2),transparent 62%),radial-gradient(70% 50% at -10% 70%,var(--glow3),transparent 60%),var(--bg);transition:background .6s}
+.decor::before{content:"";position:absolute;inset:-260px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260' viewBox='0 0 260 260'%3E%3Cg fill='none' stroke-linecap='round' stroke-linejoin='round' stroke-width='6'%3E%3Cpath d='M18 44q11-16 22 0t22 0t22 0' stroke='%23F2482C'/%3E%3Ccircle cx='62' cy='182' r='15' stroke='%233558F0'/%3E%3Cpolyline points='146,206 162,184 178,206 194,184 210,206' stroke='%23138F78'/%3E%3Cpath d='M22 120h22M33 109v22' stroke='%238A5CFF'/%3E%3Cpath d='M150 110c10-18 34-4 22 12s-28 4-16-8' stroke='%23FF6FB5'/%3E%3Cpath d='M226 30c-8 10 4 18 -4 28' stroke='%23FF9A1F'/%3E%3C/g%3E%3Cg stroke='none'%3E%3Cpath d='M186 34l6 13 14 2-10 10 3 14-13-7-12 7 2-14-10-10 14-2z' fill='%23FFC23D'/%3E%3Ccircle cx='112' cy='150' r='6' fill='%23FF6FB5'/%3E%3Ccircle cx='232' cy='130' r='5' fill='%231EC8E6'/%3E%3Ccircle cx='96' cy='38' r='4' fill='%235CC93B'/%3E%3Cpath d='M88 232l9-16 9 16z' fill='%23F2482C'/%3E%3C/g%3E%3C/svg%3E");background-size:260px 260px;opacity:var(--patop);animation:drift 70s linear infinite}
+.decor .blob{position:absolute;width:46vmax;height:46vmax;border-radius:50%;filter:blur(60px);opacity:.35;animation:float 18s ease-in-out infinite alternate}
+.decor .b1{background:var(--glow1);top:-18vmax;left:-12vmax}
+.decor .b2{background:var(--glow2);bottom:-20vmax;right:-14vmax;animation-duration:23s;animation-direction:alternate-reverse}
+@keyframes drift{to{transform:translate(260px,260px)}}
+@keyframes float{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+@media (prefers-reduced-motion:reduce){.decor::before,.decor .blob{animation:none}}
