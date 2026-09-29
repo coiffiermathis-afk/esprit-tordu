@@ -9,6 +9,16 @@
     rapide: { label: "⚡ Rapide", d: "Votes et résultats express" },
   };
   const PHOTO_RE = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/;
+  // Personnages intégrés au jeu : un emoji penché sur un fond coloré rayé.
+  const CHARS = [
+    ["🦊", "#FF9A1F"], ["🐸", "#5CC93B"], ["🐙", "#FF6FB5"], ["🦄", "#8A5CFF"], ["🐷", "#FFB3C7"], ["🐵", "#A2653E"],
+    ["🐔", "#FFC23D"], ["🦖", "#138F78"], ["🐼", "#7A8199"], ["🐨", "#1EC8E6"], ["🦁", "#F2482C"], ["🐯", "#FF9A1F"],
+    ["🐰", "#3558F0"], ["🐻", "#A2653E"], ["🐮", "#5CC93B"], ["🐧", "#1EC8E6"], ["🦉", "#2D3A8C"], ["🦩", "#2D3A8C"],
+    ["👽", "#138F78"], ["🤡", "#FFC23D"], ["👻", "#8A5CFF"], ["🤖", "#3558F0"], ["🎃", "#2D3A8C"], ["🌚", "#F2482C"],
+    ["💀", "#7A8199"], ["🥸", "#FF9A1F"], ["😈", "#8A5CFF"], ["🤠", "#FFC23D"], ["🍕", "#138F78"], ["🌶️", "#FFC23D"],
+    ["🍆", "#FFC23D"], ["🍑", "#3558F0"], ["🥑", "#F2482C"], ["🍩", "#1EC8E6"], ["🌭", "#5CC93B"],
+  ];
+  const tilt = (i) => ((i * 37) % 23) - 11;
 
   // ---------- outils ----------
   const $ = (s) => document.querySelector(s);
@@ -33,6 +43,7 @@
     err: "",
     name: clean(sget("et_name") || "", 16),
     photo: savedPhoto && PHOTO_RE.test(savedPhoto) ? savedPhoto : null,
+    charIdx: +(sget("et_char") ?? -1),
     code: null,
     prefill: urlCode,
     G: null,
@@ -105,25 +116,59 @@
       return out;
     } finally { URL.revokeObjectURL(url); }
   }
+  function charAvatar(i) {
+    const [emo, bg] = CHARS[i];
+    const c = document.createElement("canvas"); c.width = c.height = 192;
+    const ctx = c.getContext("2d");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, 192, 192);
+    ctx.save(); ctx.translate(96, 96); ctx.rotate(-Math.PI / 5); ctx.fillStyle = "rgba(255,255,255,.18)";
+    for (let x = -200; x < 200; x += 36) ctx.fillRect(x, -200, 16, 400);
+    ctx.restore();
+    ctx.save(); ctx.translate(96, 104); ctx.rotate((tilt(i) * Math.PI) / 180);
+    ctx.font = '118px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(emo, 0, 0); ctx.restore();
+    return c.toDataURL("image/jpeg", 0.86);
+  }
+  function pickChar(i) {
+    S.charIdx = i; sset("et_char", String(i));
+    setMyPhoto(charAvatar(i));
+  }
+  function randomChar() {
+    let i; do { i = Math.floor(Math.random() * CHARS.length); } while (CHARS.length > 1 && i === S.charIdx);
+    pickChar(i);
+  }
+  // Le serveur limite à un changement toutes les 2 s : on regroupe les changements rapides.
+  let photoSentAt = 0, photoTimer = 0;
+  function sendPhotoSoon() {
+    if (!S.code) return;
+    clearTimeout(photoTimer);
+    const wait = Math.max(0, 2100 - (Date.now() - photoSentAt));
+    photoTimer = setTimeout(async () => {
+      photoSentAt = Date.now();
+      const r = await send("photo", { photo: S.photo });
+      if (!r.ok && r.err) toast(r.err);
+    }, wait);
+  }
   async function setMyPhoto(photo) {
     S.photo = photo; sset("et_photo", photo);
     refreshMe();
-    if (S.code) {
-      const r = await send("photo", { photo });
-      if (!r.ok && r.err) toast(r.err);
-    }
+    sendPhotoSoon();
   }
-  $("#photoIn").addEventListener("change", async (e) => {
+  const onFile = async (e) => {
     const f = e.target.files && e.target.files[0];
     e.target.value = "";
     if (!f) return;
-    try { await setMyPhoto(await fileToAvatar(f)); }
+    closeSheet();
+    try { S.charIdx = -1; await setMyPhoto(await fileToAvatar(f)); }
     catch (err) { toast("Impossible de lire cette photo, essaie une autre."); }
-  });
+  };
+  $("#photoIn").addEventListener("change", onFile);
+  $("#selfieIn").addEventListener("change", onFile);
   function refreshMe() {
     paintAvatars();
-    const cta = $("#avcta"); if (cta) cta.textContent = S.photo ? "Changer ma photo" : "📷 Ajouter ma photo";
-    const rm = $("#avrm"); if (rm) rm.hidden = !S.photo;
+    document.querySelectorAll(".avrm").forEach((b) => (b.hidden = !S.photo));
+    document.querySelectorAll(".gchar").forEach((b) => b.setAttribute("aria-pressed", String(+b.dataset.i === S.charIdx && !!S.photo)));
   }
 
   // Bulle d'avatar : la photo si elle existe, sinon l'initiale sur la couleur du joueur.
@@ -147,12 +192,31 @@
       else { el.textContent = el.dataset.init; el.classList.remove("ph"); }
     });
   }
-  function photoPicker() {
-    return '<div class="avpick"><button type="button" class="avbtn" data-act="pickPhoto" aria-label="Choisir ma photo">' + meAv("xl") + '<span class="cam" aria-hidden="true">📷</span></button>' +
-      '<div class="avtxt"><button type="button" class="btn sm" data-act="pickPhoto" id="avcta">' + (S.photo ? "Changer ma photo" : "📷 Ajouter ma photo") + '</button>' +
-      '<button type="button" class="link" data-act="rmPhoto" id="avrm"' + (S.photo ? "" : " hidden") + '>Retirer</button>' +
-      '<span class="summary">Selfie ou photo de ta galerie, visible par les joueurs de la partie.</span></div></div>';
+  function avOptions() {
+    return '<div class="avopts"><button type="button" class="btn sm" data-act="selfie">📸 Selfie</button><button type="button" class="btn sm" data-act="pickPhoto">🖼️ Galerie</button><button type="button" class="btn sm mustard" data-act="randomAv">🎲 Au hasard</button></div>';
   }
+  function photoPicker() {
+    return '<div class="avpick"><button type="button" class="avbtn" data-act="openSheet" aria-label="Choisir ma photo">' + meAv("xl") + '<span class="cam" aria-hidden="true">📷</span></button>' +
+      '<div class="avtxt"><span class="flabel">Ta photo</span>' + avOptions() +
+      '<div class="row"><button type="button" class="link" data-act="openSheet">Choisir un personnage</button><button type="button" class="link avrm" data-act="rmPhoto"' + (S.photo ? "" : " hidden") + '>Retirer</button></div></div></div>';
+  }
+  function charGrid() {
+    return '<div class="gal">' + CHARS.map(([e, bg], i) => '<button type="button" class="gchar" data-act="pickChar" data-i="' + i + '" style="--c:' + bg + ";--t:" + tilt(i) + 'deg" aria-pressed="' + (i === S.charIdx && !!S.photo) + '" aria-label="Personnage ' + (i + 1) + '"><span>' + e + "</span></button>").join("") + "</div>";
+  }
+  function openSheet() {
+    closeSheet();
+    const el = document.createElement("div");
+    el.className = "sheet"; el.id = "sheet";
+    el.innerHTML = '<div class="sheet-bg" data-act="closeSheet"></div><div class="sheet-panel" role="dialog" aria-modal="true" aria-label="Choisir ma photo">' +
+      '<div class="row between"><span class="sheet-title">Ta photo</span><button type="button" class="kick" data-act="closeSheet" aria-label="Fermer">✕</button></div>' +
+      '<div class="sheet-me">' + meAv("xl") + avOptions() + "</div>" +
+      '<span class="eyebrow">Ou choisis un personnage</span>' + charGrid() +
+      '<button type="button" class="link avrm" data-act="rmPhoto"' + (S.photo ? "" : " hidden") + ">Retirer ma photo</button></div>";
+    document.body.appendChild(el);
+    paintAvatars();
+  }
+  function closeSheet() { const el = $("#sheet"); if (el) el.remove(); }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 
   // ---------- confettis ----------
   function confetti() {
@@ -209,7 +273,12 @@
     create() { createGame(); },
     join() { joinGame(); },
     pickPhoto() { $("#photoIn").click(); },
-    rmPhoto() { setMyPhoto(null); },
+    selfie() { $("#selfieIn").click(); },
+    randomAv() { randomChar(); },
+    pickChar(b) { pickChar(+b.dataset.i); setTimeout(closeSheet, 250); },
+    openSheet() { openSheet(); },
+    closeSheet() { closeSheet(); },
+    rmPhoto() { S.charIdx = -1; sset("et_char", null); setMyPhoto(null); },
     maxDec() { S.cfg.max = Math.max(3, S.cfg.max - 1); $("#maxo").value = S.cfg.max; },
     maxInc() { S.cfg.max = Math.min(12, S.cfg.max + 1); $("#maxo").value = S.cfg.max; },
     copy(b) {
@@ -461,7 +530,7 @@
         const isH = x.i === G.host, mine = x.i === G.me;
         const tag = isH ? '<span class="tagx host">Créateur</span>' : x.b ? '<span class="tagx bot">Bot</span>' : !x.on ? '<span class="tagx">Hors ligne</span>' : x.rdy ? '<span class="tagx ok">Prêt</span>' : '<span class="tagx">…</span>';
         const bubble = '<span class="avwrap">' + av(x, "l", x.on ? "" : "off") + (isH ? '<span class="crownS" aria-hidden="true">👑</span>' : "") + (mine ? '<span class="cam s" aria-hidden="true">📷</span>' : "") + "</span>";
-        return '<div class="seat' + (mine ? " mine" : "") + '">' + (mine ? '<button type="button" class="seatbtn" data-act="pickPhoto" aria-label="Changer ma photo">' + bubble + "</button>" : bubble) +
+        return '<div class="seat' + (mine ? " mine" : "") + '">' + (mine ? '<button type="button" class="seatbtn" data-act="openSheet" aria-label="Changer ma photo">' + bubble + "</button>" : bubble) +
           '<span class="snm">' + esc(x.n) + (mine ? " (toi)" : "") + "</span>" + tag +
           (h && !mine ? '<button class="kick" data-act="kick" data-i="' + esc(x.i) + '" aria-label="Expulser ' + esc(x.n) + '" title="Expulser">✕</button>' : "") + "</div>";
       });
