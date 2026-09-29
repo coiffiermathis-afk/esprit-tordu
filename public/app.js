@@ -19,6 +19,8 @@
     ["🍆", "#FFC23D"], ["🍑", "#3558F0"], ["🥑", "#F2482C"], ["🍩", "#1EC8E6"], ["🌭", "#5CC93B"],
   ];
   const tilt = (i) => ((i * 37) % 23) - 11;
+  // Pseudos au hasard (bouton 🎲 à côté du champ pseudo), 16 caractères maximum.
+  const NICKS = ["Chaud Lapin","Petite Coquine","Gros Coquin","Pervers Pépère","Sexy Raclette","Tonton Gênant","Tata Sulfureuse","Mr Double Sens","Miss Allusion","Le Baron Coquin","Duchesse Olé Olé","Cap'tain Tripote","Bébé Nutella","Sale Gosse","Beau Gosse Raté","Moule à Gaufres","Poule Mouillée","Kiki la Coquine","Madame Sans-Gêne","Monsieur Pas Net","L'Aubergine","La Pêche Juteuse","Banane Sauvage","Saucisse Fumée","Tigre du Canapé","Mamie Twerk","Papy Débauche","Gros Nounours","Coquine Masquée","Le Grand Frisson","Chouchou Chaud","Dieu du Slow","Roi du Malaise","Reine du Malaise","Mains Baladeuses","Œil de Velours","Lèvres Pulpeuses","Bisou Baveux","Crème Fouettée","Nuisette Rose","Caleçon Léopard","Slip Kangourou","Moustache Sexy","Choco Coquin","Popotin d'Or","Gigolo Paresseux","Fessier Royal","Brioche Dorée","Sucre d'Orge","Petit Canaillou"];
 
   // ---------- outils ----------
   const $ = (s) => document.querySelector(s);
@@ -282,6 +284,12 @@
     pickPhoto() { $("#photoIn").click(); },
     selfie() { $("#selfieIn").click(); },
     randomAv() { randomChar(); },
+    randomName() {
+      const el = $("#nm"); if (!el) return;
+      let n; do { n = NICKS[Math.floor(Math.random() * NICKS.length)]; } while (NICKS.length > 1 && n === el.value);
+      el.value = n;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    },
     pickChar(b) { pickChar(+b.dataset.i); setTimeout(closeSheet, 250); },
     openSheet() { openSheet(); },
     closeSheet() { closeSheet(); },
@@ -369,7 +377,7 @@
     const c = S.cfg;
     return '<div class="bar">' + logo(true) + '<button class="link" data-act="home">← Accueil</button></div>' +
       '<form class="card" id="cform" data-submit="create"><h2 class="h2">Créer une partie</h2>' + photoPicker() +
-      '<div><label class="f" for="nm">Ton pseudo</label><input class="inp" id="nm" maxlength="16" autocomplete="nickname" placeholder="Alex" value="' + esc(S.name) + '"></div>' +
+      '<div><label class="f" for="nm">Ton pseudo</label><div class="nmrow"><input class="inp" id="nm" maxlength="16" autocomplete="nickname" placeholder="Alex" value="' + esc(S.name) + '"><button type="button" class="btn sm mustard dice" data-act="randomName" aria-label="Pseudo au hasard" title="Pseudo au hasard">🎲</button></div></div>' +
       "<div>" + label("Nombre de manches") + seg("rounds", [5, 10, 15], c.rounds, (v) => v) + "</div>" +
       "<div>" + label("Joueurs maximum") + '<div class="stepper"><button type="button" class="btn sm" data-act="maxDec" aria-label="Moins de joueurs">−</button><output id="maxo">' + c.max + '</output><button type="button" class="btn sm" data-act="maxInc" aria-label="Plus de joueurs">+</button><span class="summary">de 3 à 12</span></div></div>' +
       "<div>" + label("Temps pour répondre") + seg("time", [15, 30, 60], c.time, (v) => v + " s") + "</div>" +
@@ -379,7 +387,7 @@
   function vJoin() {
     return '<div class="bar">' + logo(true) + '<button class="link" data-act="home">← Accueil</button></div>' +
       '<form class="card" data-submit="join"><h2 class="h2">Rejoindre une partie</h2>' + photoPicker() +
-      '<div><label class="f" for="nm">Ton pseudo</label><input class="inp" id="nm" maxlength="16" autocomplete="nickname" placeholder="Camille" value="' + esc(S.name) + '"></div>' +
+      '<div><label class="f" for="nm">Ton pseudo</label><div class="nmrow"><input class="inp" id="nm" maxlength="16" autocomplete="nickname" placeholder="Camille" value="' + esc(S.name) + '"><button type="button" class="btn sm mustard dice" data-act="randomName" aria-label="Pseudo au hasard" title="Pseudo au hasard">🎲</button></div></div>' +
       '<div><label class="f" for="cd">Code de la partie</label><input class="inp code" id="cd" maxlength="5" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P4X" value="' + esc(S.prefill) + '"></div>' +
       '<p class="err" role="alert">' + esc(S.err) + '</p><button class="btn big blue" type="submit">REJOINDRE</button></form>';
   }
