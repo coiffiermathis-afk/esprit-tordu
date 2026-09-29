@@ -264,7 +264,8 @@ app.use((req, res, next) => {
   res.setHeader("Referrer-Policy", "no-referrer");
   next();
 });
-app.use(express.static(path.join(__dirname, "public"), { maxAge: "1h", index: "index.html" }));
+// maxAge 0 : le navigateur revérifie à chaque visite (réponse 304 légère), donc les mises à jour arrivent tout de suite.
+app.use(express.static(path.join(__dirname, "public"), { maxAge: 0, index: "index.html" }));
 app.get("/health", (_req, res) => res.type("text").send("ok"));
 
 const server = http.createServer(app);
