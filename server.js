@@ -104,8 +104,18 @@ function toVote(room, now) {
   room.votes = new Map();
   if (an.length < 2) {
     room.an = [];
-    room.rr = an.map((a) => ({ i: a.pub, t: a.t, v: 0, s: 0, p: 0, g: 0 }));
-    room.note = "Pas assez de réponses pour voter cette manche. Aucun point distribué.";
+    if (an.length === 1) {
+      // une seule réponse : pas de vote, son auteur gagne d'office les points de la première place
+      const a = an[0];
+      room.rr = [{ i: a.pub, t: a.t, v: 0, s: 0, p: 3, g: 0, w: 1 }];
+      room.sc[a.pub] = (room.sc[a.pub] || 0) + 3;
+      const st = room.st[a.pub] || (room.st[a.pub] = { v: 0, w: 0, s: 0 });
+      st.w += 1;
+      room.note = "Une seule réponse cette manche : elle gagne +3 points d'office !";
+    } else {
+      room.rr = [];
+      room.note = "Personne n'a répondu cette manche. Aucun point distribué.";
+    }
     room.ph = "res"; room.endsAt = now + resMs(room); room.total = resMs(room);
     return;
   }
