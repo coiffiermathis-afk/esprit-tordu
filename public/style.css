@@ -276,3 +276,8 @@ img{max-width:100%}
 .vh{position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;overflow:hidden}
 label.btn{display:inline-flex;align-items:center;cursor:pointer;user-select:none}
 .inapp{flex-basis:100%;font-size:.8rem;background:var(--soft);border-radius:10px;padding:8px 10px;margin:0}
+
+/* pseudo au hasard */
+.nmrow{display:flex;gap:8px;align-items:stretch}
+.nmrow .inp{flex:1;min-width:0}
+.btn.dice{font-size:1.3rem;padding:0 14px;flex:none}
